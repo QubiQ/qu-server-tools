@@ -28,7 +28,7 @@ class PaymentTransaction(models.Model):
     _inherit = 'payment.transaction'
 
     def _confirm_so(self):
-        if self.state == 'pending' and self.sale_order_id.state == 'draft':
+        if self.state == 'pending' and self.sale_order_id.state == 'draft' and self.acquirer_id.provider == 'redsys':
             _logger.info('<%s> transaction not processed for order %s (ID %s)', self.acquirer_id.provider, self.sale_order_id.name, self.sale_order_id.id)
             return False
         else:
