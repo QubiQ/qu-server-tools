@@ -92,7 +92,6 @@ class WebserviceMapperFields(models.Model):
                             self.odoo_field.name)
         return val
 
-
     def create_dependence(self):
         rec_list = []
         for rec in self.filtered(lambda x: x.odoo_relation and not
@@ -134,8 +133,9 @@ class WebserviceMapperFields(models.Model):
     def search_record(self, value, many2many, search_name=True):
         """Search relation by name or by old id
         return the record or False"""
-        model_obj = self.env[self.odoo_relation]
-        if not model_obj:
+        try:
+            model_obj = self.env[self.odoo_relation]
+        except Exception:
             raise UserError(_("Model %s not found!") % self.odoo_relation)
         if 'x_old_id' in model_obj._fields:
             if many2many:
@@ -147,7 +147,8 @@ class WebserviceMapperFields(models.Model):
                 return rec
             elif len(rec) == 1:
                 return rec
-        if not search_name or  many2many:
+        field = True
+        if not search_name or many2many:
             return False
         if 'display_name' in model_obj._fields:
             # This can slow the process
