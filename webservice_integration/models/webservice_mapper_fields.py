@@ -12,6 +12,7 @@ class WebserviceMapperFields(models.Model):
     odoo_relation = fields.Char(related="odoo_field.relation")
     field_type = fields.Selection(related="odoo_field.ttype")
     source_field = fields.Char(help="Field name from the source")
+    dependence_ref_code = fields.Char(index=True, copy=False)
     dependence_id = fields.Many2one(
         comodel_name='webservice.mapper',)
     webservice_mapper_id = fields.Many2one(
@@ -43,18 +44,6 @@ class WebserviceMapperFields(models.Model):
         for rec in self:
             if rec.field_type in ["one2many", "many2many"]:
                 rec.create_method = 'together'
-
-    def get_export_field_data(self):
-        """Returns a list with data for export"""
-        return [
-            self.odoo_field.name,
-            self.source_field or "",
-            self.dependence_id.get_ref_code() or "",
-            self.unique,
-            self.map_values or "",
-            self.create_method or "",
-            self.search_operator or ""
-        ]
 
     def get_company_domain(self):
         """This function returns company domain if

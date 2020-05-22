@@ -65,6 +65,54 @@ class WebserviceMapper(models.Model):
 
     result = fields.Text(string='')
 
+    def get_ref_code(self):
+        """Write a unique ref code for exports/imports"""
+        if not self.ref_code:
+            num_2 = random.randint(10, 99)
+            num = random.randint(1000, 9999)
+            ref_code = '%s_%s_%s' % (self.odoo_model_name, num_2, num)
+            self.write({'ref_code': ref_code})
+        return self.ref_code
+
+    def export_mappers(self):
+        """ Creates the files and open the wizard to download them """
+        export_wiz = self.env['export.webservice.mapper'].create({})
+        export_files = self.env['export.webservice.file']
+        for rec in self:
+            file_data, file_name = rec.get_export_data()
+            export_wiz.file_ids += export_files.create({
+                'file_name': file_name,
+                'file_data': file_data,
+            })
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Export Mappers',
+            'res_model': 'export.webservice.mapper',
+            'res_id': export_wiz.id,
+            'view_type': 'form',
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def get_export_data(self):
+        """ Generates the data and create the file to export """
+        self.ensure_one()
+        fp = io.BytesIO()
+        exporter = self.env['export.webservice.mapper']
+        writter = pycompat.csv_writer(fp, quoting=1)
+        writter.writerow(exporter._columns_mapper)
+        writter.writerow(exporter.get_export_mapper_data(self))
+        writter.writerow(exporter._columns_fields)
+        for field in self.mapper_fields_ids:
+            writter.writerow(exporter.get_export_field_data(field))
+        return base64.encodestring(fp.getvalue()), self.name + '.csv'
+
+    def format_get_dep_fields(self):
+        vals = [
+            x.get_ref_code()
+            for x in self.dep_field_ids.mapped('webservice_mapper_id')
+        ]
+        return '/'.join(vals)
 
     def get_company_domain(self):
         if self.company_field:

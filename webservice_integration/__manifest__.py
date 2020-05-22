@@ -18,6 +18,8 @@
         "views/menu.xml",
         "views/webservice_instance_view.xml",
         "views/webservice_mapper_view.xml",
+        "wizards/export_mappers.xml",
+        "wizards/import_mappers.xml",
     ],
     'application': True,
     'installable': True,

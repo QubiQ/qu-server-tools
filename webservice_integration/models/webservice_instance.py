@@ -38,8 +38,8 @@ class Webservice(models.Model):
             ('webservice.con.odoo', 'Odoo'),
             ('webservice.con.mysql', 'MySQL'),
             ('webservice.con.sqlserver', 'SQL Server'),
-        ], required=True
-    )
+        ])
+
     mapper_ids = fields.One2many(
         comodel_name='webservice.mapper',
         inverse_name='webservice_id',

@@ -25,7 +25,7 @@
                         </group>
                         <group name="main" attrs="{'invisible': [('webservice_active', '=', False)]}">
                             <group>
-                                <field name="ws_type"/>
+                                <field name="ws_type" attrs="{'required': [('webservice_active', '=', True)]}"/>
                                 <field name="ws_url"/>
                                 <field name="ws_db"/>
                                 <field name="ws_username"/>
