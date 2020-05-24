@@ -35,8 +35,11 @@ Technical Data
 Known issues / Roadmap
 ======================
 
-* ...
+#. A mapped field within a desactivated dependece will still write the value get from the source db
 
+#. Implement time tracker for the process
+
+#. Implement a hierarchy of the mappers
 
 Bug Tracker
 ===========

@@ -5,6 +5,7 @@ from odoo.exceptions import UserError, ValidationError
 class WebserviceMapperFields(models.Model):
     _name = 'webservice.mapper.fields'
     _description = 'Webservice Mapper Fields'
+
     odoo_field = fields.Many2one(
         comodel_name='ir.model.fields',
         required=True,
@@ -25,7 +26,13 @@ class WebserviceMapperFields(models.Model):
         selection=[('not_check', 'Not Checked'),
                    ('valid', 'Valid'),
                    ('not_valid', 'Not Valid')],
-        default='not_check')
+        default='not_check',
+        compute="_compute_state_valid",
+        store=True)
+
+    @api.depends('source_field', 'odoo_field')
+    def _compute_state_valid(self):
+        self.state_valid = False
 
     unique = fields.Boolean(help="Is a unique field?")
     map_values = fields.Char(string='Map Values',
@@ -38,6 +45,7 @@ class WebserviceMapperFields(models.Model):
         store=True, readonly=False)
     search_operator = fields.Selection(
         selection=[('&', 'AND'), ('|', 'OR')], default="|")
+    sequence = fields.Integer(default=10)
 
     @api.depends('field_type')
     def _compute_create_method(self):

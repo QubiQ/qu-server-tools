@@ -14,6 +14,7 @@ _logger = logging.getLogger(__name__)
 class WebserviceMapper(models.Model):
     _name = 'webservice.mapper'
     _description = 'Webservice Mapper'
+    _order = 'sequence, id'
 
     name = fields.Char(required=1)
     active = fields.Boolean()
@@ -21,6 +22,7 @@ class WebserviceMapper(models.Model):
         comodel_name='webservice.instance',
         string='Webservice',
     )
+    sequence = fields.Integer(default=10)
     ref_code = fields.Char(index=True, copy=False)
     unique_source_field = fields.Char()
     sync_ids = fields.Char(string="Sync IDS",
@@ -42,6 +44,18 @@ class WebserviceMapper(models.Model):
         inverse_name='webservice_mapper_id',
         string='Mapper Fields',
         copy=True)
+    is_valid_fields = fields.Boolean(
+        help="True when all the mapped fields are in green",
+        compute="_compute_is_valid_field",
+        store=True
+    )
+
+    @api.depends('mapper_fields_ids.state_valid')
+    def _compute_is_valid_field(self):
+        for rec in self:
+            rec.is_valid_fields = bool(not self.mapper_fields_ids.filtered(
+                lambda x: x.state_valid != 'valid'))
+
     search_field = fields.Char(help="""Fields used for search and use records
         in the current odoo database""")
     company_field = fields.Char(help="Column name for company_id",
@@ -50,8 +64,6 @@ class WebserviceMapper(models.Model):
                                 readonly=False)
     search_domain = fields.Char(help="""Domain used for search and use records
         in the source odoo database""")
-    priority = fields.Integer(help="""Number between 0-99 to
-                set the order of execute""")
     method_calls = fields.Text(
         help="""Separate with ; the list of the method to use
          after create the object""")
@@ -62,6 +74,8 @@ class WebserviceMapper(models.Model):
     create_active = fields.Boolean(
         help="When is activated the record will be created", default=True)
     hide_create_unique_field = fields.Boolean()
+    debug_mode = fields.Boolean(help=_("It will display technical information"
+                                       " in the console"))
 
     result = fields.Text(string='')
 
@@ -173,6 +187,7 @@ class WebserviceMapper(models.Model):
 
     def _check_mapped_fields(self, field_list):
         """Check if the fields given are the same in the configuration"""
+
         all_valid = True
         unique_fields = self._get_unique_fields()
         for mapped_field in self.mapper_fields_ids:
@@ -214,7 +229,24 @@ class WebserviceMapper(models.Model):
 
     def check_mapped_fields(self):
         self.ensure_one()
-        return self._check_mapped_fields(self.webservice_id.read_fields(table=self.source_model))
+        if not self.is_valid_fields:
+            self.is_valid_fields = self._check_mapped_fields(
+                self.webservice_id.read_fields(
+                    table=self.source_model))
+        # self.check_dependences_fields()
+        return self.is_valid_fields
+
+    # TODO check bug with infinite bucle
+    def check_dependences_fields(self):
+        self.ensure_one()
+        all_valid = True
+        for field_dep in self.mapper_fields_ids.filtered(
+                lambda x: x.dependence_id and not
+                x.dependence_id.is_valid_fields):
+            if not field_dep.dependence_id.check_mapped_fields():
+                all_valid = False
+                field_dep.state_valid == "not_valid"
+        return all_valid
 
     def create_dependences(self):
         for rec in self:
@@ -242,7 +274,7 @@ class WebserviceMapper(models.Model):
         """Return a dict with k=source field and v= odoo field"""
         if for_search:
             return list(map(lambda x: x.source_field or x.odoo_field.name,
-                             self.mapper_fields_ids))
+                            self.mapper_fields_ids))
         res = {}
         for field in self.mapper_fields_ids:
             field.source_field = field.source_field or field.odoo_field.name
@@ -276,29 +308,38 @@ class WebserviceMapper(models.Model):
             then iterates from those unique fields in order to read
             the rest of the mapped information one by one
         """
-        for rec in self:
-            if rec.active:
-                # Preparing domain for search data in external source
-                domain = []
-                add_domain = rec._get_search_domain()
-                if add_domain:
-                    domain.append(add_domain)
-                # Only the unique field is readed
-                read_vals = self.prepare_read_values(
-                    table=rec.source_model, fields=[self.unique_source_field or 'id'], domain=domain)
-                res_list = self.webservice_id.read_data(read_vals)
-                for res in res_list:
-                    rec.with_delay().sync_data(res[self.unique_source_field or 'id'])
+        for rec in self.filtered('active'):
+            if not rec.check_mapped_fields():
+                raise UserError(
+                    _("There are invalid fields for mapper %s,"
+                        " check it out") % rec.name)
+            # Preparing domain for search data in external source
+            domain = []
+            add_domain = rec._get_search_domain()
+            if add_domain:
+                domain.append(add_domain)
+            # Only the unique field is readed
+            read_vals = rec.prepare_read_values(
+                table=rec.source_model,
+                fields=[rec.unique_source_field or 'id'], domain=domain)
+            res_list = rec.webservice_id.read_data(read_vals)
+            for res in res_list:
+                rec.with_delay().sync_data(
+                    res[rec.unique_source_field or 'id'])
         return {}
-
 
     def action_sync_data(self):
         for rec in self:
+            if not rec.check_mapped_fields():
+                raise UserError(
+                    _("There are invalid fields for mapper %s,"
+                        " check it out") % rec.name)
             rec.sync_data()
         return {}
 
     @job
     def sync_data(self, res_id=False, odoo_rec=False, create_method='before'):
+        """Writting data for %s""" % self.name
         """This functions controls the operations of reading and writting
         ---INPUTS---
         res_id: unique value of the source db
@@ -323,6 +364,7 @@ class WebserviceMapper(models.Model):
         data_list, odoo_rec = self.read_data(res_id, odoo_rec)
         # If the record already exits and don't want to update
         if odoo_rec and not data_list:
+            odoo_rec = odoo_rec if type(odoo_rec) is list else [odoo_rec]
             for rec in odoo_rec:
                 record_list.append(rec)
         # Write the data. If data_list is empty its means update == False
@@ -333,7 +375,6 @@ class WebserviceMapper(models.Model):
                 record_list.append(rec_id)
         return record_list
 
-
     def read_data(self, res_id=False, odoo_rec=False):
         """This function read the mapped data from source database search if
         the record already exists in the current database:
@@ -342,10 +383,11 @@ class WebserviceMapper(models.Model):
         odoo_rec: record from current db
         --OUTPUTS--
         data_list: list of dicts from souce db data
+        odoo_rec: list of records the current db
         """
         self.ensure_one()
         if odoo_rec and not self.update:
-            return [], [odoo_rec]
+            return [], odoo_rec
         # Init Variables
         domain, op = [], "="
         # Get odoo model
@@ -353,8 +395,10 @@ class WebserviceMapper(models.Model):
         # Reading in current databases
         # If res_id is set search this record in current odoo  and source odoo
         if res_id:
-            res_id = res_id[0] if type(res_id) is list and len(res_id) == 1 else res_id
-            search_field = self.search_field or 'x_old_id' in model_obj._fields and 'x_old_id'
+            res_id = res_id[0] if type(res_id) is list and len(
+                res_id) == 1 else res_id
+            search_field = self.search_field or 'x_old_id' in \
+                model_obj._fields and 'x_old_id'
             if not odoo_rec and search_field:
                 # Set Domain for Current Odoo DB
                 domain += self.get_company_domain()
@@ -373,7 +417,6 @@ class WebserviceMapper(models.Model):
         data_list = self.webservice_id.read_data(read_vals)
         self.result = '--DATA READ--\n %s' % str(data_list)
         return data_list, odoo_rec
-
 
     def write_data(self, data_read, odoo_rec=False, create_method='before'):
         """This function write data for the model and return the record
@@ -417,11 +460,12 @@ class WebserviceMapper(models.Model):
                         x for x in depen_recs if x not in dict_values
                     ]
                     if record_values:
-                        depen_vals.append((6, 0, [x.id for x in record_values]))
+                        depen_vals.append(
+                            (6, 0, [x.id for x in record_values]))
                         if dependence.unique:
                             domain.append((dependence.odoo_field.name, 'in',
-                                        [x.id for x in record_values]))
-                    depen_vals += [(0 , 0, val) for val in dict_values]
+                                           [x.id for x in record_values]))
+                    depen_vals += [(0, 0, val) for val in dict_values]
                 else:
                     # res_values[0] because in many2one field
                     # the API of odoo returns a tuple (id, 'display_name')
@@ -436,12 +480,14 @@ class WebserviceMapper(models.Model):
             else:
                 # If there isn't a mapper set up
                 # search in the current database by display_name or x_old_id
-                # Is usefull for models like currency, taxes, accounts, countries
+                # Is usefull for models like currency, taxes, accounts etc..
                 depen_ids = dependence.search_record(
-                    value=res_values, many2many=is_o2m, search_name='odoo' in self.webservice_id.ws_type)
+                    value=res_values, many2many=is_o2m, search_name='odoo' in
+                    self.webservice_id.ws_type)
                 if depen_ids:
                     depen_vals = ([(6, 0, [x.id for x in depen_ids])]
-                                  if is_o2m else depen_ids.id) if depen_ids else False
+                                  if is_o2m else depen_ids.id) \
+                        if depen_ids else False
                 else:
                     depen_vals = False
             data_write.update({dependence.odoo_field.name: depen_vals})
@@ -456,7 +502,7 @@ class WebserviceMapper(models.Model):
                 continue
             value = data_read[field_id.source_field]
             if (not value and field_id.odoo_field.ttype not in
-                ['boolean', 'integer', 'float']):
+                    ['boolean', 'integer', 'float']):
                 continue
             # Add field to the domain
             if field_id.unique:
@@ -488,9 +534,21 @@ class WebserviceMapper(models.Model):
         data_write = {k: v for k, v in data_write.items() if v is not None}
         # Get Default Values and adds to data write
         data_write = {**model_obj.default_get(data_write), **data_write}
-        self.result += "\n----DATA WRITE----\n%s" % str(data_write)
+        if self.debug_mode:
+            # Avoid binary fields in the resut
+            binary_field = self.mapper_fields_ids.filtered(
+                lambda x: x.field_type == "binary")
+            data_debug = data_write.copy()
+            if binary_field:
+                for bf_name in binary_field.mapped('odoo_field'). \
+                        mapped('name'):
+                    if data_debug.get(bf_name):
+                        del data_debug[bf_name]
+            self.result += "\n----DATA WRITE----\n%s" % str(data_debug)
         # Update Logic
         if not odoo_rec and domain:
+            if self.debug_mode:
+                self.result += "SEARCH DOMAIN:  %s\n" % domain
             odoo_rec = model_obj.search(domain)
         if odoo_rec:
             if self.update:

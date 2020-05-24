@@ -115,7 +115,8 @@ class WeberviceMySQLConnector(models.AbstractModel):
                 password=params.get('password', ''),
                 port=params.get('port', ''),
                 host=params.get('host', ''),
-                database=params.get('db', ''), connect_timeout=1000000,
+                database=params.get('db', ''),
+                connect_timeout=params.get('timeout', 300),
             )
             cursor = conn.cursor(dictionary=kargs.get('dictionary', True))
             return [conn, cursor]
