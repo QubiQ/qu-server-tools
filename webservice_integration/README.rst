@@ -40,7 +40,7 @@ Known issues / Roadmap
 #. Implement time tracker for the process
 
 #. Implement a hierarchy of the mappers
-
+#. Improve domain for search, instead of [[domain], [domain]] use a default odoo sintaxis [(domain), (domain)]
 Bug Tracker
 ===========
 
