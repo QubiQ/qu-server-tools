@@ -4,6 +4,8 @@
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 
 from odoo import fields, models, exceptions, _
+from odoo.exceptions import UserError
+
 
 import base64
 import csv
@@ -60,11 +62,11 @@ class ImportPartnerSupplier(models.TransientModel):
                     category_ids.append(category_id.create(
                         {'name': name}).id)
                 values['category_id'] = [(6, 0, category_ids)]
-
+        else:
+            del values['category_id']
         del values['fiscal_position']
         del values['payment_term']
         del values['currency']
-
         return values, property_values
 
     def _create_properties(self, partner, props):
@@ -166,31 +168,33 @@ class ImportPartnerSupplier(models.TransientModel):
     def _assign_partner_data(self, values):
         partner_data = {}
         bank_info = {}
-
+        country_obj = self.env['res.country']
         # Assign country and state
         if values['country']:
-            country_obj = self.env['res.country'].search([(
+            country_obj = country_obj.search([(
                 'code', '=', values['country'])])
             if country_obj:
                 partner_data.update({
                     'country_id': country_obj.id,
                 })
+            else:
+                raise UserError("Country with code %s not found!"
+                                % values['country'])
         del values['country']
-
         if values['state']:
             state_obj = self.env[
                 'res.country.state'].search([(
                     'name', 'ilike', values['state'])])
-            if not state_obj:
+            if not state_obj and country_obj:
                 state_obj = state_obj.create({
                     'name': values['state'],
                     'country_id': country_obj.id,
                     'code': values['state'].upper(),
                 })
-
-            partner_data.update({
-                'state_id': state_obj[0].id,
-            })
+            if state_obj:
+                partner_data.update({
+                    'state_id': state_obj[0].id,
+                })
         del values['state']
 
         # Create and assign bank account
