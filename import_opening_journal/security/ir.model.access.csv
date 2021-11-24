@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_import_opening_journal,access.import.opening.journal,model_import_opening_journal,base.group_user,1,1,1,1
+access_pending_effects_tmp,access.pending.effects.tmp,model_pending_effects_tmp,base.group_user,1,1,1,1

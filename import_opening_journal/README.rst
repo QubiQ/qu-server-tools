@@ -20,7 +20,7 @@ Configuration
 
 To configure this module, you need to:
 
-1. Create an Account move and get its ID (you can get it by activating the developer mode), you'll need it for the template.csv
+1. Create an Account move and get its ID (you can get it by checking the url #id=<number>), you'll need it for the template.csv
 
 Usage
 =====
@@ -28,6 +28,7 @@ Usage
 To use this module, you need to:
 
 #. Create a .csv file following the template available on this module.
+#. Fill the field move_id with the ID of the account move
 #. Go to Invoicing > Configuration > Import opening journal.
 #. Import the .csv and that's it.
 

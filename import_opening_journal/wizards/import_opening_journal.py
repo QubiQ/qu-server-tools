@@ -96,7 +96,7 @@ class ImportOpeningJournal(models.TransientModel):
 
     def _assign_move_line_data(self, values):
         # Search for the account
-        if values['account']:
+        if values.get('account'):
             account_obj = self.env['account.account'].search([
                 ('code', '=', values['account']),
                 ('company_id', '=', self.company_id.id),
@@ -105,9 +105,9 @@ class ImportOpeningJournal(models.TransientModel):
                 values.update({
                     'account_id': account_obj.id,
                 })
-        del values['account']
+            del values['account']
 
-        if values['tax']:
+        if values.get('tax'):
             tax_obj = self.env['account.tax'].search([
                 ('description', '=', values['tax'])
             ])
@@ -115,7 +115,7 @@ class ImportOpeningJournal(models.TransientModel):
                 values.update({
                     'tax_ids': [(6, 0, tax_obj.ids)]
                 })
-        del values['tax']
+            del values['tax']
 
         return values
 
@@ -132,19 +132,19 @@ class ImportOpeningJournal(models.TransientModel):
 
         if not acc_move_obj:
             journal_obj = self.env['account.journal'].search([
-                ('code', '=', 'MISC')
-            ])
+                ('type', '=', 'general'),
+            ], limit=1)
             acc_move_obj = acc_move_obj.sudo().create({
                 'journal_id': journal_obj.id,
                 'old_code': values['move_id'],
-                'ref': values['move_name'],
-                'date': datetime.strptime(values['date'], "%d-%m-%y"),
+                'ref': values['name'],
+                'date': datetime.strptime(values['date'], "%Y-%m-%d"),
                 # 'name': values['move_name']
             })
         # acc_move_obj.name = values['move_name']
         del values['move_id']
         del values['date']
-        del values['move_name']
+        del values['name']
 
         values['move_id'] = acc_move_obj.id
         op_ml_obj = self.env['account.move.line']

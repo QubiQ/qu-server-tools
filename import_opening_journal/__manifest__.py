@@ -21,6 +21,7 @@
         "account",
     ],
     "data": [
+        "security/ir.model.access.csv",
         "wizards/import_opening_journal.xml",
     ],
 }
