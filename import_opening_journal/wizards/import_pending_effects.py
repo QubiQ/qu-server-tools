@@ -118,7 +118,7 @@ class ImportPendingEffects(models.TransientModel):
 
         for i in range(len(reader_info)):
             # Don't read rows that start with ( , ' ' or are empty
-            if not (reader_info[i][0] is '' or reader_info[i][0][0] == '('
+            if not (reader_info[i][0] == '' or reader_info[i][0][0] == '('
                     or reader_info[i][0][0] == ' '):
                 field = reader_info[i]
                 values = dict(zip(keys, field))
