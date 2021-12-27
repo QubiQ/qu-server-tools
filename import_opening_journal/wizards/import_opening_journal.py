@@ -58,7 +58,7 @@ class ImportOpeningJournal(models.TransientModel):
             values['credit'] = 0.00
 
         values['move_id'] = int(values['move_id'])
-        return values
+        return self._assign_product_data(values)
 
     '''
         Function to assign not direct mapping data.
@@ -142,7 +142,6 @@ class ImportOpeningJournal(models.TransientModel):
         :param values: Dict with the values to import.
     '''
     def _create_new_opening_journal(self, values, i):
-        values = self._assign_product_data(values)
         acc_move_obj = self.env['account.move'].browse(int(values['move_id']))
         if not acc_move_obj:
             journal_obj = self.env['account.journal'].search([
