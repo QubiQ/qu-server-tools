@@ -48,35 +48,25 @@ class Webservice(models.Model):
     )
     timeout = fields.Integer(string="Conection Timeout", default=300)
 
-    connexion = []
-
-    def close_connexion(self):
-        if self.connexion:
-            self.connexion = self._get_connexion_obj().close_connexion(self.connexion)
-
     def read_data(self, vals):
-        ''''This function read data from db and return a dict'''
+        # ''''This function read data from db and return a dict'''
         con_obj = self._get_connexion_obj()
-        #Check if there is a connection already
-        self.connexion = self.connexion or con_obj.connect(self._get_access_data())
-        data = con_obj.read_data(self.connexion, vals)
+        # Check if there is a connection already
+        data = con_obj.read_data(self._get_access_data(), vals)
         return data
 
     def read_fields(self, table):
-        "Reads the name of the columns of one table/model"
+        # "Reads the name of the columns of one table/model"
         con_obj = self._get_connexion_obj()
-        self.connexion = self.connexion or con_obj.connect(
-            self._get_access_data(), dictionary=False)
-        fields = con_obj.read_fields(self.connexion, table)
-        self.close_connexion()
+        fields = con_obj.read_fields(self._get_access_data(), table)
         return fields
 
     def _get_connexion_obj(self):
-        """Returns the connector model and connexion objects if
-            connect == True
-        """
+        # """Returns the connector model and connexion objects if
+        #     connect == True
+        # """
         try:
-            return self.env[self.ws_type]
+            return self.env[self.ws_type].sudo()
         except Exception as err:
             raise UserError(str(err))
 

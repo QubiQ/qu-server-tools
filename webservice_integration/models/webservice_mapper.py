@@ -1,7 +1,7 @@
 # Copyright 2019 Jesus Ramoneda <jesus.ramonedae@qubiq.es>
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl).
 from odoo import models, fields, api, _
-from odoo.addons.queue_job.job import job
+# from odoo.addons.queue_job.job import job
 from odoo.tools import pycompat
 from odoo.exceptions import ValidationError, UserError
 import io
@@ -37,7 +37,8 @@ class WebserviceMapper(models.Model):
     odoo_model = fields.Many2one(
         comodel_name='ir.model',
         help="Table name or model name if the source is odoo",
-        required=True)
+        required=True,
+        ondelete='cascade')
     odoo_model_name = fields.Char(related='odoo_model.model')
     mapper_fields_ids = fields.One2many(
         comodel_name='webservice.mapper.fields',
@@ -85,16 +86,16 @@ class WebserviceMapper(models.Model):
             num_2 = random.randint(10, 99)
             num = random.randint(1000, 9999)
             ref_code = '%s_%s_%s' % (self.odoo_model_name, num_2, num)
-            self.write({'ref_code': ref_code})
+            self.sudo().write({'ref_code': ref_code})
         return self.ref_code
 
     def export_mappers(self):
         """ Creates the files and open the wizard to download them """
-        export_wiz = self.env['export.webservice.mapper'].create({})
-        export_files = self.env['export.webservice.file']
+        export_wiz = self.env['export.webservice.mapper'].sudo().create({})
+        export_files = self.env['export.webservice.file'].sudo()
         for rec in self:
             file_data, file_name = rec.get_export_data()
-            export_wiz.file_ids += export_files.create({
+            export_wiz.file_ids += export_files.sudo().create({
                 'file_name': file_name,
                 'file_data': file_data,
             })
@@ -112,7 +113,7 @@ class WebserviceMapper(models.Model):
         """ Generates the data and create the file to export """
         self.ensure_one()
         fp = io.BytesIO()
-        exporter = self.env['export.webservice.mapper']
+        exporter = self.env['export.webservice.mapper'].sudo()
         writter = pycompat.csv_writer(fp, quoting=1)
         writter.writerow(exporter._columns_mapper)
         writter.writerow(exporter.get_export_mapper_data(self))
@@ -155,7 +156,7 @@ class WebserviceMapper(models.Model):
            the id of the source object
         """
         self.ensure_one()
-        field_obj = self.env['ir.model.fields']
+        field_obj = self.env['ir.model.fields'].sudo()
         field_obj = field_obj.search([
             ('name', '=', 'x_old_id'),
             ('model_id', '=', self.odoo_model.id),
@@ -171,12 +172,12 @@ class WebserviceMapper(models.Model):
                 'index': True,
                 'state': 'manual'
             })
-        map_field_obj = self.env['webservice.mapper.fields']
+        map_field_obj = self.env['webservice.mapper.fields'].sudo()
         if not map_field_obj.search([
             ('webservice_mapper_id', '=', self.id),
             ('odoo_field', '=', field_obj.id),
         ]):
-            map_field_obj.create({
+            map_field_obj.sudo().create({
                 'odoo_field': field_obj.id,
                 'webservice_mapper_id': self.id,
                 'source_field': 'id',
@@ -186,6 +187,7 @@ class WebserviceMapper(models.Model):
         self.hide_create_unique_field = True
 
     def _check_mapped_fields(self, field_list):
+        print('_check_mapped_fields')
         """Check if the fields given are the same in the configuration"""
 
         all_valid = True
@@ -195,7 +197,7 @@ class WebserviceMapper(models.Model):
                 mapped_field.state_valid = 'valid'
             elif (not mapped_field.source_field
                   and mapped_field.odoo_field.name in field_list):
-                mapped_field.write({
+                mapped_field.sudo().write({
                     'state_valid':
                     'valid',
                     'source_field':
@@ -203,7 +205,7 @@ class WebserviceMapper(models.Model):
                 })
             elif (mapped_field.odoo_field.name[-3:] == '_id'
                   and mapped_field.odoo_field.name[:-3] in field_list):
-                mapped_field.write({
+                mapped_field.sudo().write({
                     'state_valid':
                     'valid',
                     'source_field':
@@ -217,7 +219,7 @@ class WebserviceMapper(models.Model):
         return all_valid
 
     def _get_unique_fields(self):
-        model_obj = self.env[self.odoo_model_name]
+        model_obj = self.env[self.odoo_model_name].sudo()
         unique_fields = ['id', 'x_old_id']
         for cons in model_obj._sql_constraints:
             if 'uniq' in cons[0]:
@@ -228,6 +230,7 @@ class WebserviceMapper(models.Model):
         return unique_fields
 
     def check_mapped_fields(self):
+        print('check_mapped_fields')
         self.ensure_one()
         if not self.is_valid_fields:
             self.is_valid_fields = self._check_mapped_fields(
@@ -262,7 +265,7 @@ class WebserviceMapper(models.Model):
                 'name')
             required_fields = rec.odoo_model.field_id.filtered(
                 lambda f: f.required and 'company_id' not in f.name)
-            mapper_field_obj = self.env['webservice.mapper.fields']
+            mapper_field_obj = self.env['webservice.mapper.fields'].sudo()
             for field in required_fields:
                 if current_fields and field.name in current_fields:
                     continue
@@ -329,6 +332,7 @@ class WebserviceMapper(models.Model):
         return {}
 
     def action_sync_data(self):
+        print('action_sync_data')
         for rec in self:
             if not rec.check_mapped_fields():
                 raise UserError(
@@ -337,8 +341,9 @@ class WebserviceMapper(models.Model):
             rec.sync_data()
         return {}
 
-    @job
+    # @job
     def sync_data(self, res_id=False, odoo_rec=False, create_method='before'):
+        print('sync_data')
         """Writting data for %s""" % self.name
         """This functions controls the operations of reading and writting
         ---INPUTS---

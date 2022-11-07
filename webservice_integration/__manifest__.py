@@ -6,7 +6,7 @@
 {
     'name': 'Webservice Integration',
     'summary': 'Webservice Integration',
-    'version': '13.0.1.0.0',
+    'version': '15.0.1.0.0',
     'category': 'Account',
     'author': 'QubiQ',
     'website': 'https://www.qubiq.es',

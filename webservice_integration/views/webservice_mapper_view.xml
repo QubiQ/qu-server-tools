@@ -21,9 +21,9 @@
             <field name="arch" type="xml">
                 <form string="Webservice Mapper">
                     <header>
-                        <button name="fill_required_fields" attrs="{ 'invisible': [('webservice_id','=', False)] }" class="oe_highlight" type="object" string="Auto Fill" />
-                        <button name="create_dependences" attrs="{ 'invisible': [('webservice_id','=', False)] }" class="oe_highlight" type="object" string="Create Dependences" />
-                        <button name="check_mapped_fields" attrs="{ 'invisible': [('webservice_id','=', False)] }" class="oe_highlight" type="object" string="Check Fields" />
+                        <button name="fill_required_fields" class="oe_highlight" type="object" string="Auto Fill" />
+                        <button name="create_dependences" class="oe_highlight" type="object" string="Create Dependences" />
+                        <button name="check_mapped_fields" class="oe_highlight" type="object" string="Check Fields" />
                     </header>
                     <sheet>
                         <div class="oe_title">

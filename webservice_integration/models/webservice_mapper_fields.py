@@ -9,6 +9,7 @@ class WebserviceMapperFields(models.Model):
     odoo_field = fields.Many2one(
         comodel_name='ir.model.fields',
         required=True,
+        ondelete='cascade',
         help="Table name or model name if the source is odoo")
     odoo_relation = fields.Char(related="odoo_field.relation")
     field_type = fields.Selection(related="odoo_field.ttype")
@@ -57,7 +58,7 @@ class WebserviceMapperFields(models.Model):
         """This function returns company domain if
            the model has a company_id field"""
         self.ensure_one()
-        model_obj = self.env['ir.model'].search([
+        model_obj = self.env['ir.model'].sudo().search([
                 ('model', '=', self.odoo_field.relation)
             ])
         if not model_obj or not self.webservice_mapper_id.webservice_id:
@@ -102,15 +103,15 @@ class WebserviceMapperFields(models.Model):
         in the current field Returns a record"""
         try:
             parent_id = self.webservice_mapper_id
-            model_obj = self.env['ir.model'].search([
+            model_obj = self.env['ir.model'].sudo().search([
                 ('model', '=', self.odoo_field.relation)
             ])
-            mapper_obj = self.env['webservice.mapper'].search([
+            mapper_obj = self.env['webservice.mapper'].sudo().search([
                 ('odoo_model', '=', model_obj.id),
                 ('webservice_id', '=', parent_id.webservice_id.id),
             ])
             if mapper_obj:
-                mapper_obj.write({'dep_field_ids': [(4, self.id)]})
+                mapper_obj.sudo().write({'dep_field_ids': [(4, self.id)]})
                 return mapper_obj
             values = {
                 'name': model_obj.name,
@@ -131,7 +132,7 @@ class WebserviceMapperFields(models.Model):
         """Search relation by name or by old id
         return the record or False"""
         try:
-            model_obj = self.env[self.odoo_relation]
+            model_obj = self.env[self.odoo_relation].sudo()
         except Exception:
             raise UserError(_("Model %s not found!") % self.odoo_relation)
         if 'x_old_id' in model_obj._fields:
@@ -139,7 +140,7 @@ class WebserviceMapperFields(models.Model):
                 domain = [('x_old_id', 'in', value)]
             else:
                 domain = [('x_old_id', '=', value[0])]
-            rec = self.env[self.odoo_relation].search(domain)
+            rec = self.env[self.odoo_relation].sudo().search(domain)
             if rec and many2many:
                 return rec
             elif len(rec) == 1:
@@ -157,7 +158,7 @@ class WebserviceMapperFields(models.Model):
         else:
             field = False
         if field:
-            rec = self.env[self.odoo_relation].search(domain)
+            rec = self.env[self.odoo_relation].sudo().search(domain)
             if not domain and rec:
                 rec = rec.filtered(lambda x: x.display_name == value[1])
             if len(rec) == 1:
