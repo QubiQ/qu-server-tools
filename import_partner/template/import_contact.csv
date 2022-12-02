@@ -1,0 +1,11 @@
+unique_code,parent_id,company_id,name,type,function,phone,mobile,email,lang,street,zip,city,state,country
+,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,(código ISO del 
+,,,,,,,,,,,,,,país de 2 letras
+,,,,,,,,,,,,,,en mayúscula.
+,,,,,,,,,,,,,(estado / Provincia,"Por ej,:"
+(código único para identificar el contacto),(Codigo único para identificar la empresa padre),"(Compañia a la que pertenece el contacto,",(nombre y apellidos del contacto),(Tipo de contacto : contacto normal – contact; dirección de entrega – delivery; dirección de facturación - invoice) ,,,,,,,,,Por Ej.: ,"ES (España),"
+ para identificar,," en caso de una única compañía, dejar en blanco)",,,,,,,,,,,"Barcelona,","GB (Reino Unido),"
+ cada contacto),,,,,(cargo en la empresa),(tel. Fijo),(tel. Móvil),(Email),(idioma),(dirección 1),(código postal),(ciudad),Kentucky),CN (China))
+,,,,,,,,,,,,,,
+CO00001,PR00001,,Júlia Pagà Alemany,contact,Consultora funcional,931797762,,julia.paga@qubiq.es,es,"Carrer de Pamplona, 92",08018,Barcelona,Barcelona,ES

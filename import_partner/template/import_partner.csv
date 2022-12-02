@@ -1,0 +1,13 @@
+ref,contact_type,name,comercial,is_company,company_id,street,zip,city,state,country,lang,categories,phone,mobile,email,fax,website,vat,payment_mode,payment_term,iban,fiscal_position,comment
+(codigo único,(Definir si el contacto es,(nombre empresa),(nombre comercial),(Si es compañía:,"(Compañia a la que pertenece el contacto,",(dirección),(código postal),(ciudad),(estado / Provincia,(código ISO del ,(Idioma del contacto ,(Categorias separadas,(tel. Fijo),(tel. Móvil),(Email),(Fax),(Web),(NIF ,(Tipo de pago: ,(Plazo de pago:,(Ejemplo de IBAN:,(Posicion fiscal,(notas de 
+ para identificar, cliente o proveedor:,,,"True, si no: False)"," en caso de una única compañía, dejar en blanco)",,,,Por Ej.: ,país de 2 letras,con el que se imprimiran, por “;”),,,,,,Por ej.:,Indicar nombre ,Indicar nombre ,ES6621000418401234567891),Poner nombre tal y como,la empresa)
+ cada contacto), Proveedor → supplier,,,,,,,,"Barcelona,",en mayúscula.,"las facturas, etc.",,,,,,,ESB13589049),como está en Odoo.,como está en Odoo.,,está en Odoo.,
+, Cliente → customer),,,,,,,,Kentucky),"Por ej,:",Introducir código ISO,,,,,,,,"Tarjeta, Transferencia,",Por ej.:,,Por ej.:,
+,,,,,,,,,,"ES (España),",tal como está en Odoo.,,,,,,,,"Efectivo, Pagaré)","15 Días, 30 Días,",,"Recargo de Régimen Equivalencia,",
+,,,,,,,,,,"GB (Reino Unido),",Por ej.:,,,,,,,,,Pago inmediato),,Retención IRPF 15%),
+,,,,,,,,,,CN (China)),es (Español),,,,,,,,,,,,
+,,,,,,,,,,,zh_CN (Chino),,,,,,,,,,,,
+ Datos de ejemplo:,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,
+CL00001,customer,Cliente,,True,,"Carrer de Pamplona, 92",08018,Barcelona,Barcelona,ES,es,,931797762,,info@qubiq.es,,qubiq.es,ESB13589049,Transferencia,60 Días,ES6621000418401234567891,Régimen Nacional,
+PR00001,supplier,Proveedor,,True,,"Carrer de Pamplona, 93",08018,Barcelona,Barcelona,ES,es,,931797763,,info@qubiq.es,,qubiq.es,ESB13589049,Transferencia,60 Días,ES6621000418401234567891,Régimen Nacional,
